@@ -26,6 +26,31 @@ import sys, time, os, ConfigParser
 BOUNCE = 40
 INTERVAL = 0.2
 
+def create_config_file(config, config_file):
+    """Creates a new configuration file.
+
+    :param config: the ConfigParser instance
+    :param config_file: the path of the configuration file"""
+    with open(config_file, 'w') as f:
+        config.add_section('Hot Corners')
+        config.set('Hot Corners', 'top_left_corner_command', 'gmrun')
+        config.set('Hot Corners', 'top_right_corner_command', '')
+        config.set('Hot Corners', 'bottom_left_corner_command', '')
+        config.set('Hot Corners', 'bottom_right_corner_command', '')
+        config.write(f)
+
+def parse_config():
+    """Parses the configuration file, creating it if it does not exist yet."""
+    config = ConfigParser.ConfigParser()
+    config_dir = os.getenv("HOME") + "/.config/bl-hotcorners"
+    config_file = config_dir + "/bl-hotcornersrc"
+
+    if not os.path.exists(config_dir):
+        os.makedirs(config_dir)
+        create_config_file(config, config_file)
+
+    return config, config_file
+
 def mousepos(root):
     """Returns the mouse pointer's position on the screen.
 
@@ -62,9 +87,7 @@ def main():
         disp = display.Display()
         root=display.Display().screen().root
 
-    Config = ConfigParser.ConfigParser()
-    cfgdir = os.getenv("HOME")+"/.config/bl-hotcorners"
-    rcfile = cfgdir+"/bl-hotcornersrc"
+    config, config_file = parse_config()
 
     dpy = display.Display()
     root = dpy.screen().root
@@ -73,62 +96,48 @@ def main():
     rt = screen_width - 1
     bt = screen_height - 1
 
-    try:
-        cfgfile = open(rcfile)
-    except IOError as e:
-        if not os.path.exists(cfgdir):
-            os.makedirs(cfgdir)
-        cfgfile = open(rcfile,'w')
-        Config.add_section('Hot Corners')
-        Config.set('Hot Corners','top_left_corner_command', 'gmrun')
-        Config.set('Hot Corners','top_right_corner_command', '')
-        Config.set('Hot Corners','bottom_left_corner_command', '')
-        Config.set('Hot Corners','bottom_right_corner_command', '')
-        Config.write(cfgfile)
-        cfgfile.close()
-
     while True:
-        Config.read(rcfile)
+        config.read(config_file)
         time.sleep(INTERVAL)
         pos = mousepos(dpy.screen().root)
 
         if pos[0] == 0 and pos[1] == 0:
-            if Config.get('Hot Corners','top_left_corner_command') != '':
+            if config.get('Hot Corners','top_left_corner_command') != '':
                 time.sleep(0.2)
                 pos = mousepos(dpy.screen().root)
                 if pos[0] == 0 and pos[1] == 0:
                     mousemove(dpy, pos[0] + BOUNCE, pos[1] + BOUNCE)
-                    os.system('(' + Config.get('Hot Corners','top_left_corner_command') + ') &')
+                    os.system('(' + config.get('Hot Corners','top_left_corner_command') + ') &')
                     mousemove(dpy, pos[0] + BOUNCE, pos[1] + BOUNCE)
                     time.sleep(2)
 
         elif pos[0] == rt and pos[1] == 0:
-            if Config.get('Hot Corners','top_right_corner_command') != '':
+            if config.get('Hot Corners','top_right_corner_command') != '':
                 time.sleep(0.2)
                 pos = mousepos()
                 if pos[0] == rt and pos[1] == 0 :
                     mousemove(dpy, pos[0] - BOUNCE, pos[1] + BOUNCE)
-                    os.system('(' + Config.get('Hot Corners','top_right_corner_command') + ') &')
+                    os.system('(' + config.get('Hot Corners','top_right_corner_command') + ') &')
                     mousemove(dpy, pos[0] - BOUNCE, pos[1] + BOUNCE)
                     time.sleep(2)
 
         elif pos[0] == 0 and pos[1] == bt:
-            if Config.get('Hot Corners','bottom_left_corner_command') != '':
+            if config.get('Hot Corners','bottom_left_corner_command') != '':
                 time.sleep(0.2)
                 pos = mousepos()
                 if pos[0] == 0 and pos[1] == bt:
                     mousemove(dpy, pos[0] + BOUNCE, pos[1] - BOUNCE)
-                    os.system('(' + Config.get('Hot Corners','bottom_left_corner_command') + ') &')
+                    os.system('(' + config.get('Hot Corners','bottom_left_corner_command') + ') &')
                     mousemove(dpy, pos[0] + BOUNCE, pos[1] - BOUNCE)
                     time.sleep(2)
 
         elif pos[0] == rt and pos[1] == bt:
-            if Config.get('Hot Corners','bottom_right_corner_command') != '':
+            if config.get('Hot Corners','bottom_right_corner_command') != '':
                 time.sleep(0.2)
                 pos = mousepos()
                 if pos[0] == rt and pos[1] == bt:
                     mousemove(dpy, pos[0] - BOUNCE, pos[1] - BOUNCE)
-                    os.system('(' + Config.get('Hot Corners','bottom_right_corner_command') + ') &')
+                    os.system('(' + config.get('Hot Corners','bottom_right_corner_command') + ') &')
                     mousemove(dpy, pos[0] - BOUNCE, pos[1] - BOUNCE)
                     time.sleep(2)
 
