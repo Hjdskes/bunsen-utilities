@@ -18,6 +18,9 @@
 #
 #    Renamed for BunsenLabs
 
+# TODO:
+# 1. Perhaps use python-daemon
+
 from Xlib import display, X
 from Xlib.ext.xtest import fake_input
 import argparse
@@ -56,7 +59,7 @@ def mousepos(root):
 
     :param root: the X root window"""
     data = root.query_pointer()._data
-    return data["root_x"], data["root_y"], data["mask"]
+    return data["root_x"], data["root_y"]
 
 def mousemove(dpy, x, y):
     """Moves the mouse pointer on the screen.
@@ -66,6 +69,24 @@ def mousemove(dpy, x, y):
     :param y: the y-coordinate to move the mouse pointer to"""
     fake_input(dpy, X.MotionNotify, x=x, y=y)
     dpy.sync()
+
+def move_func_top_left(dpy, x, y):
+    mousemove(dpy, x + BOUNCE, y + BOUNCE)
+def move_func_top_right(dpy, x, y):
+    mousemove(dpy, x - BOUNCE, y + BOUNCE)
+def move_func_bottom_left(dpy, x, y):
+    mousemove(dpy, x + BOUNCE, y - BOUNCE)
+def move_func_bottom_right(dpy, x, y):
+    mousemove(dpy, x - BOUNCE, y - BOUNCE)
+
+def in_corner(dpy, root, _corner, move_func, command):
+    time.sleep(0.2)
+    corner = mousepos(root)
+    if corner == _corner:
+        move_func(dpy, corner[0], corner[1])
+        os.system(command)
+        move_func(dpy, corner[0], corner[1])
+        time.sleep(2)
 
 def main():
     ap = argparse.ArgumentParser(description="Hotcorners")
@@ -88,58 +109,34 @@ def main():
         root=display.Display().screen().root
 
     config, config_file = parse_config()
-
     dpy = display.Display()
     root = dpy.screen().root
     screen_width = dpy.screen().width_in_pixels
     screen_height = dpy.screen().height_in_pixels
-    rt = screen_width - 1
-    bt = screen_height - 1
+
+    top_left = 0, 0
+    top_right = screen_width - 1, 0
+    bottom_left = 0, screen_height - 1
+    bottom_right = screen_width - 1, screen_height - 1
 
     while True:
         config.read(config_file)
         time.sleep(INTERVAL)
-        pos = mousepos(dpy.screen().root)
+        corner = mousepos(root)
 
-        if pos[0] == 0 and pos[1] == 0:
-            if config.get('Hot Corners','top_left_corner_command') != '':
-                time.sleep(0.2)
-                pos = mousepos(dpy.screen().root)
-                if pos[0] == 0 and pos[1] == 0:
-                    mousemove(dpy, pos[0] + BOUNCE, pos[1] + BOUNCE)
-                    os.system('(' + config.get('Hot Corners','top_left_corner_command') + ') &')
-                    mousemove(dpy, pos[0] + BOUNCE, pos[1] + BOUNCE)
-                    time.sleep(2)
-
-        elif pos[0] == rt and pos[1] == 0:
-            if config.get('Hot Corners','top_right_corner_command') != '':
-                time.sleep(0.2)
-                pos = mousepos()
-                if pos[0] == rt and pos[1] == 0 :
-                    mousemove(dpy, pos[0] - BOUNCE, pos[1] + BOUNCE)
-                    os.system('(' + config.get('Hot Corners','top_right_corner_command') + ') &')
-                    mousemove(dpy, pos[0] - BOUNCE, pos[1] + BOUNCE)
-                    time.sleep(2)
-
-        elif pos[0] == 0 and pos[1] == bt:
-            if config.get('Hot Corners','bottom_left_corner_command') != '':
-                time.sleep(0.2)
-                pos = mousepos()
-                if pos[0] == 0 and pos[1] == bt:
-                    mousemove(dpy, pos[0] + BOUNCE, pos[1] - BOUNCE)
-                    os.system('(' + config.get('Hot Corners','bottom_left_corner_command') + ') &')
-                    mousemove(dpy, pos[0] + BOUNCE, pos[1] - BOUNCE)
-                    time.sleep(2)
-
-        elif pos[0] == rt and pos[1] == bt:
-            if config.get('Hot Corners','bottom_right_corner_command') != '':
-                time.sleep(0.2)
-                pos = mousepos()
-                if pos[0] == rt and pos[1] == bt:
-                    mousemove(dpy, pos[0] - BOUNCE, pos[1] - BOUNCE)
-                    os.system('(' + config.get('Hot Corners','bottom_right_corner_command') + ') &')
-                    mousemove(dpy, pos[0] - BOUNCE, pos[1] - BOUNCE)
-                    time.sleep(2)
+        if corner == top_left and config.get('Hot Corners', 'top_left_corner_command') != '':
+            command = '(' + config.get('Hot Corners', 'top_left_corner_command') + ') &'
+            in_corner(dpy, root, top_left, move_func_top_left, command)
+        elif corner == top_right and config.get('Hot Corners', 'top_right_corner_command') != '':
+            command = '(' + config.get('Hot Corners', 'top_right_corner_command') + ') &'
+            in_corner(dpy, root, top_right, move_func_top_right, command)
+        elif corner == bottom_left and config.get('Hot Corners', 'bottom_left_corner_command') != '':
+            command = '(' + config.get('Hot Corners', 'bottom_left_corner_command') + ') &'
+            in_corner(dpy, root, bottom_left, move_func_bottom_left, command)
+        elif corner == bottom_right and config.get('Hot Corners', 'bottom_right_corner_command') != '':
+            command = '(' + config.get('Hot Corners', 'bottom_right_corner_command') + ') &'
+            in_corner(dpy, root, bottom_right, move_func_bottom_right, command)
 
 if __name__ == "__main__":
     main()
+
