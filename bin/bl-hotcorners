@@ -1,22 +1,10 @@
-#!/usr/bin/env python2.7
-#
-#    bl-hotcorners: a script for adding hot corners to Openbox.
-#    Copyright (C) 2012 Philip Newborough   <corenominal@corenominal.org>
-#
-#    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, either version 3 of the License, or
-#    (at your option) any later version.
-#
-#    This program is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-#    Renamed for BunsenLabs
+#!/usr/bin/env python
+"""bl-hotcorners is a script to add hot corners to Openbox, or any somewhat
+EWMH-compliant window manager.
+
+bl-hotcorners was originally written for CrunchBang Linux <http://crunchbang.org/> by Philip
+Newborough <corenominal@corenominal.org>. It is repackaged for BunsenLabs by John Crawley and
+rewritten for BunsenLabs by Jente Hidskes <hjdskes@gmail.com>."""
 
 # TODO:
 # 1. Perhaps use python-daemon
@@ -32,13 +20,13 @@ def create_config_file(config, config_file):
 
     :param config: the ConfigParser instance
     :param config_file: the path of the configuration file"""
-    with open(config_file, 'w') as f:
+    with open(config_file, 'w') as _config_file:
         config.add_section('Hot Corners')
         config.set('Hot Corners', 'top_left_corner_command', 'gmrun')
         config.set('Hot Corners', 'top_right_corner_command', '')
         config.set('Hot Corners', 'bottom_left_corner_command', '')
         config.set('Hot Corners', 'bottom_right_corner_command', '')
-        config.write(f)
+        config.write(_config_file)
 
 def parse_config():
     """Parses the configuration file, creating it if it does not exist yet."""
@@ -70,15 +58,26 @@ def mousemove(dpy, root, x, y):
     dpy.sync()
 
 def move_func_top_left(dpy, root, x, y):
+    """Offsets the mouse pointer from the top left corner."""
     mousemove(dpy, root, x + BOUNCE, y + BOUNCE)
 def move_func_top_right(dpy, root, x, y):
+    """Offsets the mouse pointer from the top right corner."""
     mousemove(dpy, root, x - BOUNCE, y + BOUNCE)
 def move_func_bottom_left(dpy, root, x, y):
+    """Offsets the mouse pointer from the bottom left corner."""
     mousemove(dpy, root, x + BOUNCE, y - BOUNCE)
 def move_func_bottom_right(dpy, root, x, y):
+    """Offsets the mouse pointer from the bottom right corner."""
     mousemove(dpy, root, x - BOUNCE, y - BOUNCE)
 
 def in_corner(dpy, root, _corner, move_func, command):
+    """Performs the hot corner functionality.
+
+    :param dpy: the X Display object
+    :param root: the root X Window object
+    :param _corner: the screen corner that is activated
+    :param move_func: function to warp the mouse pointer away from the screen corner
+    :param command: the command to execute"""
     time.sleep(0.2)
     corner = mousepos(root)
     if corner == _corner:
@@ -123,16 +122,16 @@ def main():
         time.sleep(INTERVAL)
         corner = mousepos(root)
 
-        if corner == top_left and config.get('Hot Corners', 'top_left_corner_command') != '':
+        if corner == top_left and config.get('Hot Corners', 'top_left_corner_command'):
             command = '(' + config.get('Hot Corners', 'top_left_corner_command') + ') &'
             in_corner(dpy, root, top_left, move_func_top_left, command)
-        elif corner == top_right and config.get('Hot Corners', 'top_right_corner_command') != '':
+        elif corner == top_right and config.get('Hot Corners', 'top_right_corner_command'):
             command = '(' + config.get('Hot Corners', 'top_right_corner_command') + ') &'
             in_corner(dpy, root, top_right, move_func_top_right, command)
-        elif corner == bottom_left and config.get('Hot Corners', 'bottom_left_corner_command') != '':
+        elif corner == bottom_left and config.get('Hot Corners', 'bottom_left_corner_command'):
             command = '(' + config.get('Hot Corners', 'bottom_left_corner_command') + ') &'
             in_corner(dpy, root, bottom_left, move_func_bottom_left, command)
-        elif corner == bottom_right and config.get('Hot Corners', 'bottom_right_corner_command') != '':
+        elif corner == bottom_right and config.get('Hot Corners', 'bottom_right_corner_command'):
             command = '(' + config.get('Hot Corners', 'bottom_right_corner_command') + ') &'
             in_corner(dpy, root, bottom_right, move_func_bottom_right, command)
 
