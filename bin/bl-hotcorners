@@ -14,6 +14,7 @@ import argparse, sys, time, os, ConfigParser
 
 BOUNCE = 40
 INTERVAL = 0.2
+TRIGGER_INTERVAL = 2
 
 def create_config_file(config, config_file):
     """Creates a new configuration file.
@@ -78,13 +79,13 @@ def in_corner(dpy, root, _corner, move_func, command):
     :param _corner: the screen corner that is activated
     :param move_func: function to warp the mouse pointer away from the screen corner
     :param command: the command to execute"""
-    time.sleep(0.2)
+    time.sleep(INTERVAL)
     corner = mousepos(root)
     if corner == _corner:
         move_func(dpy, root, corner[0], corner[1])
         os.system(command)
         move_func(dpy, root, corner[0], corner[1])
-        time.sleep(2)
+        time.sleep(TRIGGER_INTERVAL)
 
 def main():
     ap = argparse.ArgumentParser(description="Hotcorners")
