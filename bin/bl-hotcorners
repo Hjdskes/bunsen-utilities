@@ -51,7 +51,7 @@ def main():
     opts = ap.parse_args(sys.argv[1:])
 
     if opts.kill:
-        print "Attempting to kill any running instances..."
+        print ("Attempting to kill any running instances...")
         os.system('pkill -9 -f bl-hotcorners')
         exit()
     elif opts.daemon:
