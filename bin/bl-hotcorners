@@ -53,7 +53,7 @@ def main():
     if opts.kill:
         print ("Attempting to kill any running instances...")
         os.system('pkill -9 -f bl-hotcorners')
-        exit()
+        sys.exit()
     elif opts.daemon:
         Config = ConfigParser.ConfigParser()
         cfgdir = os.getenv("HOME")+"/.config/bl-hotcorners"
