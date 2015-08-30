@@ -44,26 +44,34 @@ hw = width / 2
 rt = width - 1
 bt = height - 1
 
-if opts.kill:
-    print "Attempting to kill any running instances..."
-    os.system('pkill -9 -f bl-hotcorners')
-    exit()
+def mousepos(root):
+    """Returns the mouse pointer's position on the screen.
 
-elif opts.daemon:
-    Config = ConfigParser.ConfigParser()
-    cfgdir = os.getenv("HOME")+"/.config/bl-hotcorners"
-    rcfile = cfgdir+"/bl-hotcornersrc"
-    bounce = 40
-    disp = display.Display()
-    root=display.Display().screen().root
+    :param root: the X root window"""
+    data = root.query_pointer()._data
+    return data["root_x"], data["root_y"], data["mask"]
 
-    def mousepos():
-        data = root.query_pointer()._data
-        return data["root_x"], data["root_y"], data["mask"]
+def mousemove(disp, x, y):
+    """Moves the mouse pointer on the screen.
 
-    def mousemove(x, y):
-        fake_input(disp, X.MotionNotify, x=x, y=y)
-        disp.sync()
+    :param disp: the X Display object
+    :param x: the x-coordinate to move the mouse pointer to
+    :param y: the y-coordinate to move the mouse pointer to"""
+    fake_input(disp, X.MotionNotify, x=x, y=y)
+    disp.sync()
+
+def main():
+    if opts.kill:
+        print "Attempting to kill any running instances..."
+        os.system('pkill -9 -f bl-hotcorners')
+        exit()
+    elif opts.daemon:
+        Config = ConfigParser.ConfigParser()
+        cfgdir = os.getenv("HOME")+"/.config/bl-hotcorners"
+        rcfile = cfgdir+"/bl-hotcornersrc"
+        bounce = 40
+        disp = display.Display()
+        root=display.Display().screen().root
 
     try:
         cfgfile = open(rcfile)
@@ -82,16 +90,16 @@ elif opts.daemon:
     while True:
         Config.read(rcfile)
         time.sleep(check_intervall)
-        pos = mousepos()
+        pos = mousepos(disp.screen().root)
 
         if pos[0] == 0 and pos[1] == 0:
             if Config.get('Hot Corners','top_left_corner_command') != '':
                 time.sleep(0.2)
-                pos = mousepos()
+                pos = mousepos(disp.screen().root)
                 if pos[0] == 0 and pos[1] == 0:
-                    mousemove(pos[0] + bounce, pos[1] + bounce)
+                    mousemove(disp, pos[0] + bounce, pos[1] + bounce)
                     os.system('(' + Config.get('Hot Corners','top_left_corner_command') + ') &')
-                    mousemove(pos[0] + bounce, pos[1] + bounce)
+                    mousemove(disp, pos[0] + bounce, pos[1] + bounce)
                     time.sleep(2)
 
         elif pos[0] == rt and pos[1] == 0:
@@ -99,9 +107,9 @@ elif opts.daemon:
                 time.sleep(0.2)
                 pos = mousepos()
                 if pos[0] == rt and pos[1] == 0 :
-                    mousemove(pos[0] - bounce, pos[1] + bounce)
+                    mousemove(disp, pos[0] - bounce, pos[1] + bounce)
                     os.system('(' + Config.get('Hot Corners','top_right_corner_command') + ') &')
-                    mousemove(pos[0] - bounce, pos[1] + bounce)
+                    mousemove(disp, pos[0] - bounce, pos[1] + bounce)
                     time.sleep(2)
 
         elif pos[0] == 0 and pos[1] == bt:
@@ -109,9 +117,9 @@ elif opts.daemon:
                 time.sleep(0.2)
                 pos = mousepos()
                 if pos[0] == 0 and pos[1] == bt:
-                    mousemove(pos[0] + bounce, pos[1] - bounce)
+                    mousemove(disp, pos[0] + bounce, pos[1] - bounce)
                     os.system('(' + Config.get('Hot Corners','bottom_left_corner_command') + ') &')
-                    mousemove(pos[0] + bounce, pos[1] - bounce)
+                    mousemove(disp, pos[0] + bounce, pos[1] - bounce)
                     time.sleep(2)
 
         elif pos[0] == rt and pos[1] == bt:
@@ -119,7 +127,10 @@ elif opts.daemon:
                 time.sleep(0.2)
                 pos = mousepos()
                 if pos[0] == rt and pos[1] == bt:
-                    mousemove(pos[0] - bounce, pos[1] - bounce)
+                    mousemove(disp, pos[0] - bounce, pos[1] - bounce)
                     os.system('(' + Config.get('Hot Corners','bottom_right_corner_command') + ') &')
-                    mousemove(pos[0] - bounce, pos[1] - bounce)
+                    mousemove(disp, pos[0] - bounce, pos[1] - bounce)
                     time.sleep(2)
+
+if __name__ == "__main__":
+    main()
