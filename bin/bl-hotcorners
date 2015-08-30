@@ -18,31 +18,13 @@
 #
 #    Renamed for BunsenLabs
 
-from Xlib import display
+from Xlib import display, X
 from Xlib.ext.xtest import fake_input
-from Xlib import X
-from subprocess import Popen, PIPE, STDOUT
-import sys, time, os, ConfigParser, re
 import argparse
+import sys, time, os, ConfigParser
 
-check_intervall = 0.2
-
-ap = argparse.ArgumentParser(description="Hotcorners")
-ap.add_argument("-k", "--kill", help="attempt to kill any runnng instances",
-            action="store_true")
-ap.add_argument("-d", "--daemon", help="run daemon and listen for cursor triggers",
-            action="store_true")
-opts = ap.parse_args(sys.argv[1:])
-
-p = Popen(['xdotool','getdisplaygeometry'], stdout=PIPE, stderr=STDOUT)
-Dimensions = p.communicate()
-Dimensions = Dimensions[0].replace('\n', '')
-Dimensions = Dimensions.split(' ')
-width = int(Dimensions[0])
-height = int(Dimensions[1])
-hw = width / 2
-rt = width - 1
-bt = height - 1
+BOUNCE = 40
+INTERVAL = 0.2
 
 def mousepos(root):
     """Returns the mouse pointer's position on the screen.
@@ -51,16 +33,23 @@ def mousepos(root):
     data = root.query_pointer()._data
     return data["root_x"], data["root_y"], data["mask"]
 
-def mousemove(disp, x, y):
+def mousemove(dpy, x, y):
     """Moves the mouse pointer on the screen.
 
-    :param disp: the X Display object
+    :param dpy: the X Display object
     :param x: the x-coordinate to move the mouse pointer to
     :param y: the y-coordinate to move the mouse pointer to"""
-    fake_input(disp, X.MotionNotify, x=x, y=y)
-    disp.sync()
+    fake_input(dpy, X.MotionNotify, x=x, y=y)
+    dpy.sync()
 
 def main():
+    ap = argparse.ArgumentParser(description="Hotcorners")
+    ap.add_argument("-k", "--kill", help="attempt to kill any runnng instances",
+                action="store_true")
+    ap.add_argument("-d", "--daemon", help="run daemon and listen for cursor triggers",
+                action="store_true")
+    opts = ap.parse_args(sys.argv[1:])
+
     if opts.kill:
         print "Attempting to kill any running instances..."
         os.system('pkill -9 -f bl-hotcorners')
@@ -72,6 +61,17 @@ def main():
         bounce = 40
         disp = display.Display()
         root=display.Display().screen().root
+
+    Config = ConfigParser.ConfigParser()
+    cfgdir = os.getenv("HOME")+"/.config/bl-hotcorners"
+    rcfile = cfgdir+"/bl-hotcornersrc"
+
+    dpy = display.Display()
+    root = dpy.screen().root
+    screen_width = dpy.screen().width_in_pixels
+    screen_height = dpy.screen().height_in_pixels
+    rt = screen_width - 1
+    bt = screen_height - 1
 
     try:
         cfgfile = open(rcfile)
@@ -89,17 +89,17 @@ def main():
 
     while True:
         Config.read(rcfile)
-        time.sleep(check_intervall)
-        pos = mousepos(disp.screen().root)
+        time.sleep(INTERVAL)
+        pos = mousepos(dpy.screen().root)
 
         if pos[0] == 0 and pos[1] == 0:
             if Config.get('Hot Corners','top_left_corner_command') != '':
                 time.sleep(0.2)
-                pos = mousepos(disp.screen().root)
+                pos = mousepos(dpy.screen().root)
                 if pos[0] == 0 and pos[1] == 0:
-                    mousemove(disp, pos[0] + bounce, pos[1] + bounce)
+                    mousemove(dpy, pos[0] + BOUNCE, pos[1] + BOUNCE)
                     os.system('(' + Config.get('Hot Corners','top_left_corner_command') + ') &')
-                    mousemove(disp, pos[0] + bounce, pos[1] + bounce)
+                    mousemove(dpy, pos[0] + BOUNCE, pos[1] + BOUNCE)
                     time.sleep(2)
 
         elif pos[0] == rt and pos[1] == 0:
@@ -107,9 +107,9 @@ def main():
                 time.sleep(0.2)
                 pos = mousepos()
                 if pos[0] == rt and pos[1] == 0 :
-                    mousemove(disp, pos[0] - bounce, pos[1] + bounce)
+                    mousemove(dpy, pos[0] - BOUNCE, pos[1] + BOUNCE)
                     os.system('(' + Config.get('Hot Corners','top_right_corner_command') + ') &')
-                    mousemove(disp, pos[0] - bounce, pos[1] + bounce)
+                    mousemove(dpy, pos[0] - BOUNCE, pos[1] + BOUNCE)
                     time.sleep(2)
 
         elif pos[0] == 0 and pos[1] == bt:
@@ -117,9 +117,9 @@ def main():
                 time.sleep(0.2)
                 pos = mousepos()
                 if pos[0] == 0 and pos[1] == bt:
-                    mousemove(disp, pos[0] + bounce, pos[1] - bounce)
+                    mousemove(dpy, pos[0] + BOUNCE, pos[1] - BOUNCE)
                     os.system('(' + Config.get('Hot Corners','bottom_left_corner_command') + ') &')
-                    mousemove(disp, pos[0] + bounce, pos[1] - bounce)
+                    mousemove(dpy, pos[0] + BOUNCE, pos[1] - BOUNCE)
                     time.sleep(2)
 
         elif pos[0] == rt and pos[1] == bt:
@@ -127,9 +127,9 @@ def main():
                 time.sleep(0.2)
                 pos = mousepos()
                 if pos[0] == rt and pos[1] == bt:
-                    mousemove(disp, pos[0] - bounce, pos[1] - bounce)
+                    mousemove(dpy, pos[0] - BOUNCE, pos[1] - BOUNCE)
                     os.system('(' + Config.get('Hot Corners','bottom_right_corner_command') + ') &')
-                    mousemove(disp, pos[0] - bounce, pos[1] - bounce)
+                    mousemove(dpy, pos[0] - BOUNCE, pos[1] - BOUNCE)
                     time.sleep(2)
 
 if __name__ == "__main__":
