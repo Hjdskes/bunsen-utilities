@@ -51,10 +51,9 @@ bl-aerosnap: usage:
 ### Dependencies
 * python
 * python-xlib
-* wmctrl
-* xdotool (>=2.20110530)
+
 On Debian systems:
-sudo apt-get update && sudo apt-get install python python-xlib wmctrl xdotool
+sudo apt-get update && sudo apt-get install python python-xlib
 
 ### License
 GPL3
